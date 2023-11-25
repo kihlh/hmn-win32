@@ -53,55 +53,56 @@ import  HMC = require("hmn-win32");
 
 ### API(正在构建中。。。)
 
-- [x] **ipv4** 获取本机局域网的ip(v4)
+- **ipv4** 获取本机局域网的ip(v4)
 
-- [x] **ip**获取本机局域网的ip(适配器,v4,v6)
+- **ip**获取本机局域网的ip(适配器,v4,v6)
 
-- [x] **adapterIP **获取本机局域网的ip(适配器,v4,v6)
+- **adapterIP **获取本机局域网的ip(适配器,v4,v6)
 
-- [ ] **public_ip** 获取本机公网ip
+- **public_ip** 获取本机公网ip
 
-- [x] **getNetParams** 获取主机网络信息
+- **getNetParams** 获取主机网络信息
 
-- [ ] **freePort** 获取一个tcp空闲端口 (服务)
+- **freePort** 获取一个tcp空闲端口 (服务)
 
-- [ ] **freePortTCP** 获取一个空闲的tcp端口
+- **freePortTCP** 获取一个空闲的tcp端口
 
-- [ ] **freePortUDP** 获取一个空闲的udp端口
+- **freePortUDP** 获取一个空闲的udp端口
 
-- [ ] **hasPortUDP** 判断此udp端口是否空闲
+- **hasPortUDP** 判断此udp端口是否空闲
 
-- [ ] **hasPortTCP**判断此TCP端口是否空闲
+- **hasPortTCP**判断此TCP端口是否空闲
 
-- [ ] **getSystemProxyServer** 获取系统代理链接（仅在启用系统代理时）
+- **getSystemProxyServer** 获取系统代理链接（仅在启用系统代理时）
 
-- [ ] **getSystemProxyPac**  获取系统代理pac脚本链接
+- **getSystemProxyPac**  获取系统代理pac脚本链接
 
-- [ ] **getDomainIPaddress**  从默认dns(联网)解析域名主机ip
+- **getDomainIPaddress**  从默认dns(联网)解析域名主机ip
 
-- [ ] **getHostsPath** 获取hosts文件的路径
+- **getHostsPath** 获取hosts文件的路径
 
-- [x] **getTCPv6PortProcessID** 获取此端口被哪个进程占用了
+- **getTCPv6PortProcessID** 获取此端口被哪个进程占用了
 
-- [x] **getUDPv6PortProcessID** 获取此端口被哪个进程占用了
+- **getUDPv6PortProcessID** 获取此端口被哪个进程占用了
 
-- [x] **getUDPv4PortProcessID** 获取此端口被哪个进程占用了
+- **getUDPv4PortProcessID** 获取此端口被哪个进程占用了
 
-- [x] **getTCPv4PortProcessID** 获取此端口被哪个进程占用了
+- **getTCPv4PortProcessID** 获取此端口被哪个进程占用了
 
-- [x] **getConnectNetList**  枚举此电脑中的 端口 ipv4 and ipv6 的 TCP，UDP 端口信息
+- **getConnectNetList**  枚举此电脑中的 端口 ipv4 and ipv6 的 TCP，UDP 端口信息
 
-- [x] **killProcess** 结束该pid进程（低权利 如果需要高权限的kill请使用hmc-win32）
+- **killProcess** 结束该pid进程（低权利 如果需要高权限的kill请使用hmc-win32）
 
-- [x] **sleep** 同步阻塞(进程)
+- **sleep** 同步阻塞(进程)
 
-- [ ] **Sleep** 异步阻塞(进程)
+- **Sleep** 异步阻塞(进程)
 
-- [ ] **PortWatchdog** 检测端口变化如果关闭或者启用时发起回调
+- **PortWatchdog** 检测端口变化如果关闭或者启用时发起回调
 
-- [x] **getProcessidFilePath** 获取进程可执行文件位置
+- **getProcessidFilePath** 获取进程可执行文件位置
 
-- [x] **isAdmin** 判断当前软件是否拥有管理员权限
+- **isAdmin** 判断当前软件是否拥有管理员权限
+
 -   **ping** 
 - 对运行速度提升影响不大，已移除
   
