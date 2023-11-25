@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include <iostream>
+#include "./hmc_string_util.h"
 
 #define _HMC_ALL_UTIL 0x0666
 #define napi_ass_false -66666666
@@ -12,12 +13,15 @@ using namespace std;
 namespace hmc_napi_util
 {
     bool _hmc_debug = false;
-    
+
+#ifdef INCLUDE_NLOHMANN_JSON_HPP_
+
     /**
      * @brief 由于any序列化大量的obj会出现内存溢出 所有部分获取将会返回一个数字id（ _hmc_Object_id + 1 ） 然后通过这个id查询获取对象
      *
      */
     map<long, json> AllObjectValueList;
+#endif // INCLUDE_NLOHMANN_JSON_HPP_
 
     namespace create_value
     {
@@ -46,7 +50,7 @@ namespace hmc_napi_util
         {
             napi_status status;
             napi_value result;
-            status = napi_create_string_utf8(env, value.c_str() , NAPI_AUTO_LENGTH, &result);
+            status = napi_create_string_utf8(env, value.c_str(), NAPI_AUTO_LENGTH, &result);
             assert(status == napi_ok);
             return result;
         }
@@ -56,7 +60,7 @@ namespace hmc_napi_util
         {
             napi_status status;
             napi_value result;
-            status = napi_create_string_utf16(env, (const char16_t *) value.c_str(), NAPI_AUTO_LENGTH, &result);
+            status = napi_create_string_utf16(env, (const char16_t *)value.c_str(), NAPI_AUTO_LENGTH, &result);
             assert(status == napi_ok);
             return result;
         }
@@ -73,6 +77,7 @@ namespace hmc_napi_util
         {
             return String(env, "");
         }
+#ifdef INCLUDE_NLOHMANN_JSON_HPP_
         /**
          * @brief 返回json 对象 napi的js脚本应当对文本的开头进行判断 如果含有"hmc::api::::json::::" 应当转义为json
          *
@@ -86,6 +91,8 @@ namespace hmc_napi_util
             jsonValue.get_to(jsonValuetoString);
             return String(env, jsonValuetoString);
         }
+#endif // INCLUDE_NLOHMANN_JSON_HPP_
+
         /**
          * @brief 返回一个 number到js
          *
@@ -386,6 +393,8 @@ namespace hmc_napi_util
 
             return ResultForAny;
         }
+#ifdef INCLUDE_NLOHMANN_JSON_HPP_
+
         /**
          * @brief 返回json 对象 napi的js脚本应当对文本的开头进行判断 如果含有"hmc::api::::json::::" 应当转义为json
          *
@@ -413,7 +422,8 @@ namespace hmc_napi_util
                 }
                 else if (jsonValue.is_string())
                 {
-                    return String(env, hmc_string_util::ansi_to_utf16(jsonValue.template get<string>()));
+                    auto ansi_to_utf16 = hmc_string_util::ansi_to_utf16(jsonValue.template get<string>());
+                    return String(env, ansi_to_utf16);
                 }
                 else if (jsonValue.is_number())
                 {
@@ -437,6 +447,8 @@ namespace hmc_napi_util
 
             return Undefined(env);
         }
+#endif // INCLUDE_NLOHMANN_JSON_HPP_
+
         napi_value New(napi_env env)
         {
             return Undefined(env);
@@ -537,6 +549,7 @@ namespace hmc_napi_util
                 }
                 return ResultforArray;
             }
+            
             /**
              * @brief 创建一个全是数字的数组
              *
@@ -697,6 +710,8 @@ namespace hmc_napi_util
 
                 return ResultforObject;
             }
+#ifdef INCLUDE_NLOHMANN_JSON_HPP_
+
             /**
              * @brief 通过查询id获取对象
              *
@@ -715,6 +730,8 @@ namespace hmc_napi_util
                     return Object::New(env);
                 }
             }
+#endif // INCLUDE_NLOHMANN_JSON_HPP_
+
             napi_value New(napi_env env, map<string, any> mapObject)
             {
 
@@ -735,6 +752,10 @@ namespace hmc_napi_util
 
                 return Object(env, mapObject);
             }
+
+            
+#ifdef INCLUDE_NLOHMANN_JSON_HPP_
+
             napi_value New(napi_env env, long hmc_obj_id)
             {
                 if (AllObjectValueList.find(hmc_obj_id) != AllObjectValueList.end())
@@ -746,6 +767,8 @@ namespace hmc_napi_util
                     return Object::New(env);
                 }
             }
+#endif // INCLUDE_NLOHMANN_JSON_HPP_
+
             napi_value New(napi_env env)
             {
                 return Object(env, map<string, int>{});
@@ -1051,7 +1074,8 @@ namespace hmc_napi_util
             napi_typeof(env, value, &type);
             return type == napi_external;
         }
-    }
+        
+        }
 
     namespace get_value
     {

@@ -1,11 +1,14 @@
+#pragma once
 
 // 防止重复导入
 #ifndef MODE_INTERNAL_INCLUDE_HMC_G_HPP
 #define MODE_INTERNAL_INCLUDE_HMC_G_HPP
 
+
 #include <string>
 #include <windows.h>
 #include <iostream>
+
 using namespace std;
 
 #define __HMC_CHECK_CATCH catch (char *err){};

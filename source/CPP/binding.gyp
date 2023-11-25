@@ -6,10 +6,10 @@
       "conditions": [
         ['OS=="win"', {
           "sources": [
-            "sock_lib/ip.cpp",
-            "sock_lib/connect_net.cpp",
-            "sock_lib/ping.cpp",
-            "Main.cpp"
+            # "fmt11.cpp",
+            "hmc_string_util.cpp",
+            "sock_lib.cpp",
+            "Main.cpp",
           ],
           'msvs_settings': {
             'VCCLCompilerTool': {
@@ -23,6 +23,7 @@
                 "/wd4312",
                 "/wd4311",
                 "/wd4302",
+                "/wd4010",
                 "/wd4060",
                 "/wd4700",
                 "/wd4081",

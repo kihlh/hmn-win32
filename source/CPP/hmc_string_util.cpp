@@ -1,136 +1,76 @@
 
-// 防止重复导入
-#ifndef MODE_INTERNAL_INCLUDE_HMC_STRING_UTIL_HPP
-#define MODE_INTERNAL_INCLUDE_HMC_STRING_UTIL_HPP
+#include "./hmc_string_util.h"
 
-#include <string>
-#include <vector>
-#include <windows.h>
-#include <crtdbg.h> // For _ASSERTE()
-
-#include <limits>    // For numeric_limits
-#include <stdexcept> // For overflow_error
-
-using namespace std;
-
-class hmc_string_util
+// ----------------------------------------------------------------
+// A2U8
+// Local CP_ACP ( Ansi [A] ) to utf8 encoding
+// winapi A字符 转 utf8(win 标准[W])
+// ? 推荐w字符(utf16) 损耗更少一点 napi支持直接返回utf16
+// ----------------------------------------------------------------
+string hmc_string_util::ansi_to_utf8(const string ansi)
 {
-public:
-    // ----------------------------------------------------------------
-    // W2U8
-    // utf 16 to utf8 encoding
-    // utf16(win 标准) 转 utf8 字符(win 标准)
-    // ----------------------------------------------------------------
-    static string utf16_to_utf8(const wstring utf16);
+    wstring to_utf16 = ansi_to_utf16(ansi);
+    return utf16_to_utf8(to_utf16);
+    return string("");
+}
 
-    // ----------------------------------------------------------------
-    // U82W
-    // utf 8 to utf16 encoding
-    // utf8(win 标准) 转 utf16 字符(win 标准)
-    // ----------------------------------------------------------------
+// ----------------------------------------------------------------
+// U82A
+// utf8 to Local CP_ACP ( Ansi [A] ) encoding
+// utf8 字符 转 winapi A字符
+// ? 推荐w字符(utf16) 损耗更少一点 napi支持直接返回utf16
+// ----------------------------------------------------------------
+string hmc_string_util::utf8_to_ansi(const string utf8)
+{
+    wstring to_utf16 = utf8_to_utf16(utf8);
+    return utf16_to_ansi(to_utf16);
+}
 
-    static wstring utf8_to_utf16(const string utf8);
+/**
+ * @brief 仅拼接文本
+ *
+ * @tparam Arguments
+ * @param input
+ * @param firstInput
+ * @param data_list
+ * @return string
+ */
+template <typename... Arguments>
+string hmc_string_util::string_join(const string &input, const string &firstInput, vector<Arguments...> data_list)
+{
+    string result = "";
+    result.append(input);
+    result.append(firstInput);
+    for (auto data : data_list)
+    {
+        result.append(data);
+    }
 
-    // ----------------------------------------------------------------
-    // W2A
-    // utf 16 to Local CP_ACP ( Ansi [A] ) encoding
-    // utf16(win 标准[W]) 转 winapi A字符
-    // ----------------------------------------------------------------
-    static string utf16_to_ansi(const wstring utf16);
+    return result;
+}
 
-    // ----------------------------------------------------------------
-    // A2W
-    // Local CP_ACP ( Ansi [A] ) to utf16 encoding
-    // winapi A字符 转 utf16(win 标准[W])
-    // ----------------------------------------------------------------
-    static wstring ansi_to_utf16(const string ansi);
+/**
+ * @brief 仅拼接文本
+ *
+ * @tparam Arguments
+ * @param input
+ * @param firstInput
+ * @param data_list
+ * @return wstring
+ */
+template <typename... Arguments>
+wstring hmc_string_util::string_join(const wstring &input, const wstring &firstInput, vector<Arguments...> data_list)
+{
+    wstring result = "";
+    result.append(input);
+    result.append(firstInput);
+    for (auto data : data_list)
+    {
+        result.append(data);
+    }
 
-    // ----------------------------------------------------------------
-    // A2U8
-    // Local CP_ACP ( Ansi [A] ) to utf8 encoding
-    // winapi A字符 转 utf8(win 标准[W])
-    // ? 推荐w字符(utf16) 损耗更少一点 napi支持直接返回utf16
-    // ----------------------------------------------------------------
-    static string ansi_to_utf8(const string ansi);
-
-    // ----------------------------------------------------------------
-    // U82A
-    // utf8 to Local CP_ACP ( Ansi [A] ) encoding
-    // utf8 字符 转 winapi A字符
-    // ? 推荐w字符(utf16) 损耗更少一点 napi支持直接返回utf16
-    // ----------------------------------------------------------------
-    static string utf8_to_ansi(const string utf8);
-    // UFT8 字符转为GBK(中文)
-    static string utf8_to_gbk(string u8str);
-
-    // 判断此文本是否符合utf8特征
-    static bool is_utf8(const string input);
-    // 文本中是否有数字 并且是否是安全的 int32
-    static bool is_int_str(const string Value);
-    // 文本中是否有数字 并且是否是安全的 long
-    static bool is_long_str(const string Value);
-    // 文本中是否有数字 并且是否是安全的 long long
-    static bool is_longlong_str(const string Value);
-
-    // 拼接文本
-    static wstring join(vector<wstring> &item_list);
-    static wstring join(vector<wstring> &item_list, wstring splitter);
-    static void join(vector<wstring> &item_list, wstring splitter, wstring outputPtr);
-    static string join(vector<string> &item_list);
-    static string join(vector<string> &item_list, string splitter);
-    static void join(vector<string> &item_list, string splitter, string outputPtr);
-
-    // 分割文本
-    static vector<wstring> split(wstring &sourcePtr, wchar_t splitter);
-    static void split(wstring &sourcePtr, wchar_t splitter, vector<wstring> &item_list);
-    static vector<string> split(string &sourcePtr, char splitter);
-    static void split(string &sourcePtr, char splitter, vector<string> &item_list);
-
-    // 转义json文本
-    static wstring escapeJsonString(const wstring &input);
-    static string escapeJsonString(const string &input);
-
-    // 替换单次
-    static void replace(wstring &sourcePtr, const wstring from, const wstring to);
-    static void replace(string &sourcePtr, string from, string to);
-
-    /**
-     * @brief 替换指定内容 在第N次出现的时候(仅本次)
-     *
-     * @param sourcePtr
-     * @param from
-     * @param bubble_index
-     * @param to
-     */
-    static void replace(string &sourcePtr, string from, size_t bubble_index, string to);
-
-    // 替换全部
-    static void replaceAll(wstring &sourcePtr, const wstring from, const wstring to);
-    static void replaceAll(string &sourcePtr, string from, string to);
-
-    // 移除尾部 为xx 的指定文本
-    static string trimLast(const string &input, const string &match);
-    // 移除开头和尾部 为xx 的指定文本
-    static string trim(const string &input, const string &match);
-    // 移除开头为xx 的指定文本
-    static string trimFirst(const string &input, const string &match);
-    // 移除尾部 为xx 的指定文本
-    static wstring hmc_string_util::trim(const wstring &input, const wstring &match);
-    // 移除开头和尾部 为xx 的指定文本
-    static wstring hmc_string_util::trimLast(const wstring &input, const wstring &match);
-    // 移除开头为xx 的指定文本
-    static wstring hmc_string_util::trimFirst(const wstring &input, const wstring &match);
-
-    // 反特殊字符序列化
-    static void unEscapeJsonString(string &sourcePtr);
-    // 反特殊字符序列化
-    static void unEscapeJsonString(wstring &sourcePtr);
-
-#ifdef defined(_MFC_VER)
-    CString utf8_to_cstring(const string utf8str);
-    string cstring_to_utf8(CString strValue);
-#endif
-};
+    return result;
+}
 
 // UFT8 字符转为GBK(中文)
 string hmc_string_util::utf8_to_gbk(const string u8str)
@@ -237,7 +177,7 @@ inline wstring hmc_string_util::utf8_to_utf16(const string utf8)
     // converted to *negative* integers.
     if (utf8.length() > static_cast<size_t>((numeric_limits<int>::max)()))
     {
-        __HMC_debug(string("Utf8ToUtf16"), string("Input string too long: size_t-length doesn't fit into int."));
+        //  __HMC_debug(string("Utf8ToUtf16"), string("Input string too long: size_t-length doesn't fit into int."));
     }
     const int utf8Length = static_cast<int>(utf8.length());
 
@@ -258,7 +198,7 @@ inline wstring hmc_string_util::utf8_to_utf16(const string utf8)
 
         // hmc::error
         string error_message = string(error == ERROR_NO_UNICODE_TRANSLATION ? "Invalid UTF-8 sequence found in input string." : "Cannot convert from UTF-8 to UTF-16 (WideCharToMultiByte failed).");
-        __HMC_debug(string("Utf16ToUtf8"), error_message, to_string(error));
+        //  __HMC_debug(string("Utf16ToUtf8"), error_message, to_string(error));
     }
 
     // Make room in the destination string for the converted bits
@@ -279,7 +219,7 @@ inline wstring hmc_string_util::utf8_to_utf16(const string utf8)
         const DWORD error = ::GetLastError();
         // hmc::error
         string error_message = string(error == ERROR_NO_UNICODE_TRANSLATION ? "Invalid UTF-8 sequence found in input string." : "Cannot convert from UTF-8 to UTF-16 (WideCharToMultiByte failed).");
-        __HMC_debug(string("Utf16ToUtf8"), error_message, to_string(error));
+        //  __HMC_debug(string("Utf16ToUtf8"), error_message, to_string(error));
     }
 
     return utf16;
@@ -309,7 +249,7 @@ inline string hmc_string_util::utf16_to_utf8(const wstring utf16)
     // converted to *negative* integers.
     if (utf16.length() > static_cast<size_t>((numeric_limits<int>::max)()))
     {
-        __HMC_debug(string("Utf16ToUtf8"), string("Input string too long: size_t-length doesn't fit into int."));
+        //  __HMC_debug(string("Utf16ToUtf8"), string("Input string too long: size_t-length doesn't fit into int."));
     }
     const int utf16Length = static_cast<int>(utf16.length());
 
@@ -329,7 +269,7 @@ inline string hmc_string_util::utf16_to_utf8(const wstring utf16)
         const DWORD error = ::GetLastError();
         // hmc::error
         string error_message = string(error == ERROR_NO_UNICODE_TRANSLATION ? "Invalid UTF-16 sequence found in input string." : "Cannot convert from UTF-16 to UTF-8 (WideCharToMultiByte failed).");
-        __HMC_debug(string("Utf16ToUtf8"), error_message, to_string(error));
+        //  __HMC_debug(string("Utf16ToUtf8"), error_message, to_string(error));
     }
 
     // Make room in the destination string for the converted bits
@@ -351,7 +291,7 @@ inline string hmc_string_util::utf16_to_utf8(const wstring utf16)
         const DWORD error = ::GetLastError();
         // hmc::error
         string error_message = string(error == ERROR_NO_UNICODE_TRANSLATION ? "Invalid UTF-16 sequence found in input string." : "Cannot convert from UTF-16 to UTF-8 (WideCharToMultiByte failed).");
-        __HMC_debug(string("Utf16ToUtf8"), error_message, to_string(error));
+        //  __HMC_debug(string("Utf16ToUtf8"), error_message, to_string(error));
     }
 
     return utf8;
@@ -372,7 +312,7 @@ inline string hmc_string_util::utf16_to_ansi(const wstring utf16)
 
     if (utf16.length() > static_cast<size_t>((numeric_limits<int>::max)()))
     {
-        __HMC_debug(string("Utf16ToAnsi"), string("Input string too long: size_t-length doesn't fit into int."));
+        //  __HMC_debug(string("Utf16ToAnsi"), string("Input string too long: size_t-length doesn't fit into int."));
         return ansi;
     }
 
@@ -391,7 +331,7 @@ inline string hmc_string_util::utf16_to_ansi(const wstring utf16)
         const DWORD error = ::GetLastError();
         // hmc::error
         string error_message = string(error == ERROR_NO_UNICODE_TRANSLATION ? "Invalid UTF-16 sequence found in input string." : "Cannot convert from UTF-16 to CP_ACP (WideCharToMultiByte failed).");
-        __HMC_debug(string("Utf16ToAnsi"), error_message, to_string(error));
+        //  __HMC_debug(string("Utf16ToAnsi"), error_message, to_string(error));
     }
 
     ansi.resize(ansiLength);
@@ -409,7 +349,7 @@ inline string hmc_string_util::utf16_to_ansi(const wstring utf16)
         const DWORD error = ::GetLastError();
         // hmc::error
         string error_message = string(error == ERROR_NO_UNICODE_TRANSLATION ? "Invalid UTF-16 sequence found in input string." : "Cannot convert from UTF-16 to CP_ACP (WideCharToMultiByte failed).");
-        __HMC_debug(string("Utf16ToAnsi"), error_message, to_string(error));
+        //  __HMC_debug(string("Utf16ToAnsi"), error_message, to_string(error));
     }
 
     return ansi;
@@ -430,7 +370,7 @@ inline wstring hmc_string_util::ansi_to_utf16(const string ansi)
 
     if (ansi.length() > static_cast<size_t>((numeric_limits<int>::max)()))
     {
-        __HMC_debug(string("AnsiToUtf16"), string("Input string too long: size_t-length doesn't fit into int."));
+        //  __HMC_debug(string("AnsiToUtf16"), string("Input string too long: size_t-length doesn't fit into int."));
     }
     const int utf8Length = static_cast<int>(ansi.length());
 
@@ -446,7 +386,7 @@ inline wstring hmc_string_util::ansi_to_utf16(const string ansi)
         const DWORD error = ::GetLastError();
         // hmc::error
         string error_message = string(error == ERROR_NO_UNICODE_TRANSLATION ? "Invalid ansi sequence found in input string." : "Cannot convert from ansi to UTF-16 (WideCharToMultiByte failed).");
-        __HMC_debug(string("AnsiToUtf16"), error_message, to_string(error));
+        //  __HMC_debug(string("AnsiToUtf16"), error_message, to_string(error));
     }
 
     utf16.resize(utf16Length);
@@ -463,22 +403,10 @@ inline wstring hmc_string_util::ansi_to_utf16(const string ansi)
         const DWORD error = ::GetLastError();
         // hmc::error
         string error_message = string(error == ERROR_NO_UNICODE_TRANSLATION ? "Invalid ansi sequence found in input string." : "Cannot convert from ansi to UTF-16 (WideCharToMultiByte failed).");
-        __HMC_debug(string("AnsiToUtf16"), error_message, to_string(error));
+        //  __HMC_debug(string("AnsiToUtf16"), error_message, to_string(error));
     }
 
     return utf16;
-}
-
-inline string hmc_string_util::ansi_to_utf8(const string ansi)
-{
-    wstring to_utf16 = ansi_to_utf16(ansi);
-    return utf16_to_utf8(to_utf16);
-}
-
-inline string hmc_string_util::utf8_to_ansi(const string utf8)
-{
-    wstring to_utf16 = utf8_to_utf16(utf8);
-    return utf16_to_ansi(to_utf16);
 }
 
 inline bool hmc_string_util::is_utf8(const string input)
@@ -854,6 +782,7 @@ wstring hmc_string_util::join(vector<wstring> &item_list)
 
 string hmc_string_util::trim(const string &input, const string &match)
 {
+
     string temp_trim_str = trimLast(input, match);
     return trimFirst(temp_trim_str, match);
 }
@@ -888,6 +817,142 @@ wstring hmc_string_util::trimLast(const wstring &input, const wstring &match)
     return (end_pos == string::npos) ? L"" : input.substr(0, end_pos + 1);
 }
 
+// 移除尾部 为xx 的指定文本
+string hmc_string_util::trimLastAll(const string &input, const string &match)
+{
+    string result = string(input);
+    if (match.empty())
+    {
+        return result;
+    }
+    for (size_t i = 0; i < input.size(); i++)
+    {
+        string new_result = trimLast(result, match);
+        if (result.empty() || result.size() == new_result.size())
+        {
+            return new_result;
+        }
+        result.clear();
+        result.append(new_result);
+    }
+
+    return result;
+}
+
+// 移除开头和尾部 为xx 的指定文本
+string hmc_string_util::trimAll(const string &input, const string &match)
+{
+    string result = string(input);
+    if (match.empty())
+    {
+        return result;
+    }
+
+    for (size_t i = 0; i < input.size(); i++)
+    {
+        string new_result = trim(result, match);
+        if (result.empty() || result.size() == new_result.size())
+        {
+            return new_result;
+        }
+        result.clear();
+        result.append(new_result);
+    }
+
+    return result;
+}
+
+// 移除开头为xx 的指定文本
+string hmc_string_util::trimFirstAll(const string &input, const string &match)
+{
+    string result = string(input);
+    if (match.empty())
+    {
+        return result;
+    }
+
+    for (size_t i = 0; i < input.size(); i++)
+    {
+        string new_result = trimFirst(result, match);
+        if (result.empty() || result.size() == new_result.size())
+        {
+            return new_result;
+        }
+        result.clear();
+        result.append(new_result);
+    }
+
+    return result;
+}
+
+// 移除尾部 为xx 的指定文本
+wstring hmc_string_util::trimAll(const wstring &input, const wstring &match)
+{
+    wstring result = wstring(input);
+    if (match.empty())
+    {
+        return result;
+    }
+
+    for (size_t i = 0; i < input.size(); i++)
+    {
+        wstring new_result = trim(result, match);
+        if (result.empty() || result.size() == new_result.size())
+        {
+            return new_result;
+        }
+        result.clear();
+        result.append(new_result);
+    }
+
+    return result;
+}
+
+// 移除开头和尾部 为xx 的指定文本
+wstring hmc_string_util::trimLastAll(const wstring &input, const wstring &match)
+{
+    wstring result = wstring(input);
+    if (match.empty())
+    {
+        return result;
+    }
+    for (size_t i = 0; i < input.size(); i++)
+    {
+        wstring new_result = trimLast(result, match);
+        if (result.empty() || result.size() == new_result.size())
+        {
+            return new_result;
+        }
+        result.clear();
+        result.append(new_result);
+    }
+
+    return result;
+}
+
+// 移除开头为xx 的指定文本
+wstring hmc_string_util::trimFirstAll(const wstring &input, const wstring &match)
+{
+    wstring result = wstring(input);
+    if (match.empty())
+    {
+        return result;
+    }
+
+    for (size_t i = 0; i < input.size(); i++)
+    {
+        wstring new_result = trimFirst(result, match);
+        if (result.empty() || result.size() == new_result.size())
+        {
+            return new_result;
+        }
+        result.clear();
+        result.append(new_result);
+    }
+
+    return result;
+}
+
 void hmc_string_util::unEscapeJsonString(string &sourcePtr)
 {
     replaceAll(sourcePtr, "\\a", "\a");
@@ -916,77 +981,294 @@ void hmc_string_util::unEscapeJsonString(wstring &sourcePtr)
     replaceAll(sourcePtr, L"\\\\", L"\\");
 }
 
-// _MFC_VER
-#ifdef defined(_MFC_VER)
-
-#ifdef defined(_MFC_VER)
-
-string hmc_string_util::cstring_to_utf8(CString strValue)
+// https://github.com/r-lyeh-archived/fmt11
+// The Unlicense
+template <unsigned trail_args, typename Map, typename... Args>
+inline std::string hmc_string_util::fmt11hlp(const Map *ctx, const char *format, Args... args)
 {
-    wstring wbuffer;
-#ifdef _UNICODE
-    // 如果是Unicode编码，直接获取Unicode字符串
-    wbuffer.assign(strValue.GetString(), strValue.GetLength());
-#else
-    /*
-     * 转换ANSI编码到Unicode编码
-     * 获取转换后长度
-     */
-    int length = MultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS, (LPCTSTR)strValue, -1, NULL, 0);
-    wbuffer.resize(length);
-    /* 转换 */
-    MultiByteToWideChar(CP_ACP, 0, (LPCTSTR)strValue, -1, (LPWSTR)(wbuffer.data()), wbuffer.length());
-#endif //_UNICODE
-
-    /* 获取转换后长度 */
-    int utf8Length = WideCharToMultiByte(CP_UTF8, 0, wbuffer.data(), wbuffer.size(), NULL, 0, NULL, NULL);
-    /* 获取转换后内容 */
-    string utf8Buffer;
-    utf8Buffer.resize(utf8Length);
-
-    WideCharToMultiByte(CP_UTF8, 0, wbuffer.data(), -1, (LPSTR)(utf8Buffer.data()), utf8Length, NULL, NULL);
-    return (utf8Buffer);
+    std::stringstream out;
+    if (format)
+    {
+        auto tpl = std::tuple_cat(std::tuple<Args...>{args...}, std::make_tuple(0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+        char raw[64], tag[32], fmt[32];
+        unsigned fix, dig, counter = 0;
+        while (*format)
+        {
+            if (*format++ != '{')
+            {
+                out << format[-1];
+            }
+            else
+            {
+                auto parse = [](char raw[64], char tag[32], char fmt[32], unsigned &fix, unsigned &dig, const char *in) -> int
+                {
+                    int lv = 0; // parses [{] { [tag][:][fmt] } [}] expressions; returns num of bytes parsed or 0 if error
+                    char *o = raw, *m = tag, *g = 0;
+                    while (*in && *in == '{')
+                    {
+                        *o++ = *in++, ++lv;
+                        if ((o - raw) >= 63)
+                            return 0;
+                    }
+                    while (*in && lv > 0)
+                    {
+                        /**/ if (*in < 32)
+                            return 0;
+                        else if (*in < '0' && !g)
+                            return 0;
+                        else if (*in == '}')
+                            --lv, *o++ = *in++;
+                        else if (*in == ':')
+                            g = fmt, *o++ = *in++;
+                        else
+                            *(g ? g : m)++ = *o++ = *in++;
+                        if (((o - raw) >= 63) || ((m - tag) >= 31) || (g && (g - fmt) >= 31))
+                            return 0;
+                    }
+                    *o = *m = *(g ? g : fmt) = 0;
+                    if (0 != lv)
+                    {
+                        return 0;
+                    }
+                    fix = dig = 0;
+                    for (char *f = fmt; *f != 0; ++f)
+                    {
+                        char *input = f;
+                        if (*input >= '0' && *input <= '9')
+                        {
+                            double dbl = atof(input);
+                            fix = int(dbl), dig = int(dbl * 1000 - fix * 1000);
+                            while (dig && !(dig % 10))
+                                dig /= 10;
+                            // printf("%s <> %d %d\n", input, fix, dig );
+                            break;
+                        }
+                    }
+                    return o - raw;
+                };
+                int read_bytes = parse(raw, tag, fmt, fix, dig, &format[-1]);
+                if (!read_bytes)
+                {
+                    out << format[-1];
+                }
+                else
+                {
+                    // style
+                    format += read_bytes - 1;
+                    for (char *f = fmt; *f; ++f)
+                        switch (*f)
+                        {
+                        default:
+                            if (f[0] >= '0' && f[0] <= '9')
+                            {
+                                while ((f[0] >= '0' && f[0] <= '9') || f[0] == '.')
+                                    ++f;
+                                --f;
+                                out << std::setw(fix);
+                                out << std::fixed;
+                                out << std::setprecision(dig);
+                            }
+                            else
+                            {
+                                out.fill(f[0]);
+                            }
+                            break;
+                        case '#':
+                            out << std::showbase;
+                            break;
+                        case 'b':
+                            out << std::boolalpha;
+                            break;
+                        case 'D':
+                            out << std::dec << std::uppercase;
+                            break;
+                        case 'd':
+                            out << std::dec;
+                            break;
+                        case 'O':
+                            out << std::oct << std::uppercase;
+                            break;
+                        case 'o':
+                            out << std::oct;
+                            break;
+                        case 'X':
+                            out << std::hex << std::uppercase;
+                            break;
+                        case 'x':
+                            out << std::hex;
+                            break;
+                        case 'f':
+                            out << std::fixed;
+                            break;
+                        case '<':
+                            out << std::left;
+                            break;
+                        case '>':
+                            out << std::right;
+                        }
+                    // value
+                    char arg = tag[0];
+                    if (!arg)
+                    {
+                        if (counter < (sizeof...(Args) - trail_args))
+                        {
+                            arg = '0' + counter++;
+                        }
+                        else
+                        {
+                            arg = '\0';
+                        }
+                        // printf("arg %d/%d\n", int(counter), (sizeof...(Args) - trail_args));
+                    }
+                    switch (arg)
+                    {
+                    default:
+                        if (ctx)
+                        {
+                            auto find = ctx->find(tag);
+                            if (find == ctx->end())
+                                out << raw;
+                            else
+                                out << find->second;
+                        }
+                        else
+                        {
+                            out << raw;
+                        }
+                        break;
+                    case 0:
+                        out << raw;
+                        break;
+                    case '0':
+                        out << std::get<0>(tpl);
+                        break;
+                    case '1':
+                        out << std::get<1>(tpl);
+                        break;
+                    case '2':
+                        out << std::get<2>(tpl);
+                        break;
+                    case '3':
+                        out << std::get<3>(tpl);
+                        break;
+                    case '4':
+                        out << std::get<4>(tpl);
+                        break;
+                    case '5':
+                        out << std::get<5>(tpl);
+                        break;
+                    case '6':
+                        out << std::get<6>(tpl);
+                        break;
+                    case '7':
+                        out << std::get<7>(tpl);
+                        break;
+                    case '8':
+                        out << std::get<8>(tpl);
+                        break;
+                    case '9':
+                        out << std::get<9>(tpl);
+                    }
+                }
+            }
+        }
+    }
+    return out.str();
 }
 
-#endif //_MFC_VER
-
-#ifdef defined(_MFC_VER)
-
-CString hmc_string_util::utf8_to_cstring(string utf8str)
+inline std::string hmc_string_util::fmt11(const char *format)
 {
-    // 计算所需空间的大小
-    int nLen = MultiByteToWideChar(CP_UTF8, NULL,
-                                   utf8str.data(), utf8str.size(), NULL, 0);
-
-    // 转换为Unicode
-    wstring wbuffer;
-    wbuffer.resize(nLen);
-    MultiByteToWideChar(CP_UTF8, NULL, utf8str.data(), utf8str.size(),
-                        (LPWSTR)(wbuffer.data()), wbuffer.length());
-
-#ifdef UNICODE
-    // 如果是Unicode编码，直接返回Unicode字符串
-    return (CString(wbuffer.data(), wbuffer.length()));
-#else
-    /*
-     * 转换为ANSI编码
-     * 得到转换后长度
-     */
-    nLen = WideCharToMultiByte(CP_ACP, 0,
-                               wbuffer.data(), wbuffer.length(), NULL, 0, NULL, NULL);
-
-    string ansistr;
-    ansistr.resize(nLen);
-
-    // 把Unicode字符串转成ANSI编码字符串
-    WideCharToMultiByte(CP_ACP, 0, (LPWSTR)(wbuffer.data()), wbuffer.length(),
-                        (LPSTR)(ansistr.data()), ansistr.size(), NULL, NULL);
-    return (CString(ansistr.data(), ansistr.length()));
-#endif // UNICODE
+    return fmt11hlp<1, std::map<std::string, std::string>>(nullptr, format, 0);
 }
 
-#endif //_MFC_VER
+template <typename... Args>
+inline std::string hmc_string_util::fmt11(const char *format, Args... args)
+{
+    return fmt11hlp<0, std::map<std::string, std::string>>(nullptr, format, args...);
+}
 
-#endif //_MFC_VER
+template <typename Map>
+extern inline std::string hmc_string_util::fmt11map(const Map &ctx, const char *format)
+{
+    return fmt11hlp<1>(&ctx, format, 0);
+}
 
-#endif // MODE_INTERNAL_INCLUDE_HMC_STRING_UTIL_HPP
+template <typename Map, typename... Args>
+inline std::string hmc_string_util::fmt11map(const Map &ctx, const char *format, Args... args)
+{
+    return fmt11hlp<0>(&ctx, format, args...);
+}
+
+// 数组
+string hmc_string_util::vec2json(vector<string> item_list)
+{
+    string result = string("[");
+
+    for (size_t i = 0; i < item_list.size(); i++)
+    {
+        auto data = item_list[i];
+        result.append(fmt11(R"("{}")", escapeJsonString(data)));
+
+        if (item_list.size() - 1 > i)
+        {
+            result.append(",");
+        }
+    }
+
+    result.append("]");
+    return result;
+}
+
+string hmc_string_util::vec2json()
+{
+    string result = string("[");
+    result.append("]");
+    return result;
+}
+
+wstring hmc_string_util::vec2json(vector<wstring> item_list)
+{
+    wstring result = wstring(L"[");
+
+    for (size_t i = 0; i < item_list.size(); i++)
+    {
+        auto data = item_list[i];
+        result.append(L"\"" + escapeJsonString(data) + L"\"");
+
+        if (item_list.size() - 1 > i)
+        {
+            result.append(L",");
+        }
+    }
+
+    result.append(L"]");
+    return result;
+}
+
+// template <typename Arg1, typename... Args>
+// string hmc_string_util::vec2json(Arg1 arg_1, Args... args)
+// {
+//     string result = string("[");
+
+//     result.append("]");
+//     return result;
+// }
+
+string hmc_string_util::vec2json(vector<DWORD> item_list)
+{
+    string result = string("[");
+
+    for (size_t i = 0; i < item_list.size(); i++)
+    {
+        auto data = item_list[i];
+        result.append(to_string(static_cast<long >(data)));
+
+        if (item_list.size() - 1 > i)
+        {
+            result.append(",");
+        }
+    }
+
+    result.append("]");
+    return result;
+}

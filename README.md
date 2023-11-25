@@ -51,38 +51,70 @@ import  HMC = require("hmn-win32");
 - **Sleep** 异步的阻塞
 - **native** 直接连接HMN.node的原生方法 (不建议使用)
 
-### API
+### API(正在构建中。。。)
 
-- **ping** 
-- **ip** 获取本机局域网的ip
-- **public_ip** 获取公网ip
-- **getNetParams** 获取主机信息
-- **freePort** 获取一个tcp空闲端口 (服务)
-- **freePortTCP** 获取一个空闲的tcp端口
-- **freePortUDP** 获取一个空闲的udp端口
-- **hasPortUDP** 判断此udp端口是否空闲
-- **hasPortTCP**判断此TCP端口是否空闲
-- **getPortProcessID** 获取此端口被哪个进程占用了
-- **enumPortInfoList** 枚举此电脑中的 端口 ipv4 and ipv6 的 TCP，UDP 端口信息
-- **killProcess** 结束该pid进程（低权利 如果需要高权限的kill请使用hmc-win32）
-- **sleep** 同步阻塞(进程)
-- **Sleep** 异步阻塞(进程)
-- **PortWatchdog** 检测端口变化如果关闭或者启用时发起回调
-- **getProcessidFilePath** 获取进程可执行文件位置
-- **isAdmin** 判断当前软件是否拥有管理员权限
+- [x] **ipv4** 获取本机局域网的ip(v4)
+
+- [x] **ip**获取本机局域网的ip(适配器,v4,v6)
+
+- [x] **adapterIP **获取本机局域网的ip(适配器,v4,v6)
+
+- [ ] **public_ip** 获取本机公网ip
+
+- [x] **getNetParams** 获取主机网络信息
+
+- [ ] **freePort** 获取一个tcp空闲端口 (服务)
+
+- [ ] **freePortTCP** 获取一个空闲的tcp端口
+
+- [ ] **freePortUDP** 获取一个空闲的udp端口
+
+- [ ] **hasPortUDP** 判断此udp端口是否空闲
+
+- [ ] **hasPortTCP**判断此TCP端口是否空闲
+
+- [ ] **getSystemProxyServer** 获取系统代理链接（仅在启用系统代理时）
+
+- [ ] **getSystemProxyPac**  获取系统代理pac脚本链接
+
+- [ ] **getDomainIPaddress**  从默认dns(联网)解析域名主机ip
+
+- [ ] **getHostsPath** 获取hosts文件的路径
+
+- [x] **getTCPv6PortProcessID** 获取此端口被哪个进程占用了
+
+- [x] **getUDPv6PortProcessID** 获取此端口被哪个进程占用了
+
+- [x] **getUDPv4PortProcessID** 获取此端口被哪个进程占用了
+
+- [x] **getTCPv4PortProcessID** 获取此端口被哪个进程占用了
+
+- [x] **getConnectNetList**  枚举此电脑中的 端口 ipv4 and ipv6 的 TCP，UDP 端口信息
+
+- [x] **killProcess** 结束该pid进程（低权利 如果需要高权限的kill请使用hmc-win32）
+
+- [x] **sleep** 同步阻塞(进程)
+
+- [ ] **Sleep** 异步阻塞(进程)
+
+- [ ] **PortWatchdog** 检测端口变化如果关闭或者启用时发起回调
+
+- [x] **getProcessidFilePath** 获取进程可执行文件位置
+
+- [x] **isAdmin** 判断当前软件是否拥有管理员权限
+-   **ping** 
+- 对运行速度提升影响不大，已移除
+  
+- ping使用  https://www.npmjs.com/package/ping
+  
+- 服务器有效性判断用 https://github.com/qawemlilo/ping-monitor
+
 ### 重新构建
 
 HMC所有API采用 winapi + nodeapi实现，因此无需重新编译（允许运行在node8以上环境 node6.14.2 需要自行使用esbuld编译），如果您需要对源代码进行修改请使用``node-gyp rebuild`` 进行编译，这需要有一定的C/C++基础，编译工具使用node-gyp即可，需要使用到的工具如下：
 
 - node-gyp
 - Visual Studio 2019（or other versions)
-
-### 一些常见问题
-
-- 子进程/线程  信息获取不全 
-
-  - **node 进程可执行文件是 32位的 但是系统是64位的 被枚举的  进程/线程/子进程/二次子进程  包含64位的** 
-    - 无法解决 因为 子进程/线程 使用进程快照消耗和安全性都最佳  
 
 
 ### 风险告知

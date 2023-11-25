@@ -1,9 +1,10 @@
-#include "./sock.hpp"
+#pragma once
+#include "./sock_lib.h"
 
 /**
  * @brief 获取主机信息
- * 
- * @return hmc_NetParams 
+ *
+ * @return hmc_NetParams
  */
 hmc_NetParams getNetParams()
 {
@@ -93,7 +94,6 @@ hmc_NetParams getNetParams()
 
     return NetParams;
 }
-
 
 /**
  * @brief 获取占用指定TCP端口的进程id
@@ -716,4 +716,712 @@ void enumConnectNet(vector<ConnectNet> &ConnectNetList, bool tcp = true, bool ud
             return;
         }
     }
+}
+
+string formatIP(DWORD dwLocalAddr)
+{
+    size_t a = dwLocalAddr >> 24 & 0xFF;
+    size_t b = dwLocalAddr >> 16 & 0xFF;
+    size_t c = dwLocalAddr >> 8 & 0xFF;
+    size_t d = dwLocalAddr & 0xFF;
+
+    return string(to_string((long)d) + "." + to_string((long)c) + "." + to_string((long)b) + "." + to_string((long)a));
+}
+
+string formatIP(IN6_ADDR dwLocalAddr)
+{
+    char ipv6String[INET6_ADDRSTRLEN];
+    if (RtlIpv6AddressToStringA(reinterpret_cast<IN6_ADDR *>(&dwLocalAddr), ipv6String) == NULL)
+    {
+        return "";
+    }
+    return string(ipv6String);
+}
+
+string formatIP(UCHAR ucLocalAddr[16])
+{
+    char ipv6String[INET6_ADDRSTRLEN];
+    if (RtlIpv6AddressToStringA(reinterpret_cast<IN6_ADDR *>(ucLocalAddr), ipv6String) == NULL)
+    {
+        return "";
+    }
+    return string(ipv6String);
+}
+
+hmc_v4_addr_item get_v4_addr(MIB_IPADDRROW addr)
+{
+    char addr_str[BUFSIZ];
+    char mask_str[BUFSIZ];
+
+    DWORD broadcast;
+    char broadcast_str[BUFSIZ];
+
+    broadcast = (addr.dwAddr & addr.dwMask) | (addr.dwMask ^ (DWORD)0xffffffff);
+
+    inet_ntop(AF_INET, (void *)&addr.dwAddr, addr_str, BUFSIZ);
+    inet_ntop(AF_INET, (void *)&addr.dwMask, mask_str, BUFSIZ);
+    inet_ntop(AF_INET, (void *)&broadcast, broadcast_str, BUFSIZ);
+
+    hmc_v4_addr_item result;
+    result.broadcast = string(broadcast_str);
+    result.ipaddress = string(addr_str);
+    result.netmask = string(mask_str);
+
+    return result;
+}
+
+bool get_v4_ipaddress_list(vector<hmc_v4_addr_item> &addrList)
+{
+    WSAData d;
+    if (WSAStartup(MAKEWORD(2, 2), &d) != 0)
+    {
+        return false;
+    }
+
+    DWORD rv, size;
+    PMIB_IPADDRTABLE ipaddrtable;
+
+    rv = GetIpAddrTable(NULL, &size, 0);
+    if (rv != ERROR_INSUFFICIENT_BUFFER)
+    {
+        // fprintf(stderr, "GetIpAddrTable() failed...");
+        return false;
+    }
+    ipaddrtable = (PMIB_IPADDRTABLE)malloc(size);
+
+    rv = GetIpAddrTable(ipaddrtable, &size, 0);
+    if (rv != NO_ERROR)
+    {
+        // fprintf(stderr, "GetIpAddrTable() failed...");
+        free(ipaddrtable);
+        return false;
+    }
+
+    for (DWORD i = 0; i < ipaddrtable->dwNumEntries; ++i)
+    {
+        addrList.push_back(
+            get_v4_addr(ipaddrtable->table[i]));
+    }
+
+    free(ipaddrtable);
+
+    WSACleanup();
+    return true;
+}
+
+hmc_addr_item ua_to_hmc_addr_item(PIP_ADAPTER_UNICAST_ADDRESS ua)
+{
+    hmc_addr_item result;
+
+    int family = ua->Address.lpSockaddr->sa_family;
+
+    result.typeName = family == AF_INET ? L"IPv4" : L"IPv6";
+    result.type = family;
+
+    char buf[BUFSIZ];
+    memset(buf, 0, BUFSIZ);
+    getnameinfo(ua->Address.lpSockaddr, ua->Address.iSockaddrLength, buf, sizeof(buf), NULL, 0, NI_NUMERICHOST);
+    result.ipaddress = hmc_string_util::ansi_to_utf16(buf);
+
+    return result;
+}
+
+bool get_net_ipaddress_list(vector<hmc_net_addr_item> &addrList)
+{
+    bool result = false;
+    WSAData d;
+
+    if (WSAStartup(MAKEWORD(2, 2), &d) != 0)
+    {
+        return result;
+    }
+
+    DWORD rv, size;
+    PIP_ADAPTER_ADDRESSES adapter_addresses, aa;
+    PIP_ADAPTER_UNICAST_ADDRESS ua;
+
+    rv = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, NULL, &size);
+    if (rv != ERROR_BUFFER_OVERFLOW)
+    {
+        return false;
+    }
+    adapter_addresses = (PIP_ADAPTER_ADDRESSES)malloc(size);
+
+    rv = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, adapter_addresses, &size);
+    if (rv != ERROR_SUCCESS)
+    {
+        free(adapter_addresses);
+        return false;
+    }
+
+    for (aa = adapter_addresses; aa != NULL; aa = aa->Next)
+    {
+        hmc_net_addr_item addr_item;
+        addr_item.name = aa->FriendlyName;
+        addr_item.addr_item = {};
+
+        for (ua = aa->FirstUnicastAddress; ua != NULL; ua = ua->Next)
+        {
+            addr_item.addr_item.push_back(ua_to_hmc_addr_item(ua));
+        }
+
+        addrList.push_back(addr_item);
+    }
+
+    free(adapter_addresses);
+
+    WSACleanup();
+    result = true;
+
+    return result;
+}
+
+// 版权声明：本文为博主原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接和本声明。
+// 本文链接：https : // blog.csdn.net/u010745620/article/details/98471504
+
+/**
+ * @brief 获取系统代理链接
+ *
+ * @param system_proxy_server_url
+ * @return true
+ * @return false
+ */
+bool get_system_proxy_server(wstring &system_proxy_server_url)
+{
+    system_proxy_server_url.clear();
+
+    HKEY key;
+    auto ret = RegOpenKeyExW(HKEY_CURRENT_USER, LR"(Software\Microsoft\Windows\CurrentVersion\Internet Settings)", 0, KEY_ALL_ACCESS, &key);
+    if (ret != ERROR_SUCCESS)
+    {
+        return false;
+    }
+
+    DWORD values_count, max_value_name_len, max_value_len;
+    ret = RegQueryInfoKeyW(key, NULL, NULL, NULL, NULL, NULL, NULL,
+                           &values_count, &max_value_name_len, &max_value_len, NULL, NULL);
+    if (ret != ERROR_SUCCESS)
+    {
+        return false;
+    }
+
+    std::vector<std::tuple<std::shared_ptr<wchar_t>, DWORD, std::shared_ptr<BYTE>>> values;
+    for (int i = 0; i < values_count; i++)
+    {
+        std::shared_ptr<wchar_t> value_name(new wchar_t[max_value_name_len + 1],
+                                            std::default_delete<wchar_t[]>());
+        DWORD value_name_len = max_value_name_len + 1;
+        DWORD value_type, value_len;
+        RegEnumValueW(key, i, value_name.get(), &value_name_len, NULL, &value_type, NULL, &value_len);
+        std::shared_ptr<BYTE> value(new BYTE[value_len],
+                                    std::default_delete<BYTE[]>());
+        value_name_len = max_value_name_len + 1;
+        RegEnumValueW(key, i, value_name.get(), &value_name_len, NULL, &value_type, value.get(), &value_len);
+        values.push_back(std::make_tuple(value_name, value_type, value));
+    }
+
+    DWORD ProxyEnable = 0;
+    for (auto x : values)
+    {
+        if (wcscmp(std::get<0>(x).get(), L"ProxyEnable") == 0)
+        {
+            ProxyEnable = *(DWORD *)(std::get<2>(x).get());
+        }
+    }
+
+    if (ProxyEnable)
+    {
+        for (auto x : values)
+        {
+            if (wcscmp(std::get<0>(x).get(), L"ProxyServer") == 0)
+            {
+                system_proxy_server_url.append((wchar_t *)(std::get<2>(x).get()));
+                return true;
+            }
+        }
+    }
+    else
+    {
+        return false;
+    }
+    return true;
+}
+
+/**
+ * @brief 获取系统代理pac脚本链接
+ *
+ * @param system_proxy_pac_url
+ * @return true
+ * @return false
+ */
+bool get_system_proxy_pac(wstring &system_proxy_pac_url)
+{
+    system_proxy_pac_url.clear();
+    HKEY hKey;
+    LPCWSTR pacKeyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings";
+    LPCWSTR pacValueName = L"AutoConfigURL";
+
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, pacKeyPath, 0, KEY_READ, &hKey) == ERROR_SUCCESS)
+    {
+        WCHAR pacURL[256] = {0};
+        DWORD dataSize = sizeof(pacURL);
+
+        if (RegQueryValueExW(hKey, pacValueName, NULL, NULL, (LPBYTE)pacURL, &dataSize) == ERROR_SUCCESS)
+        {
+            if (pacURL[0] != '\0')
+            {
+                system_proxy_pac_url.append(pacURL);
+                // std::wcout << "PAC URL: " << pacURL << std::endl;
+            }
+            else
+            {
+                // std::cout << "PAC proxy is not enabled." << std::endl;
+                return false;
+            }
+        }
+        else
+        {
+            // std::cerr << "Failed to query registry value." << std::endl;
+            return false;
+        }
+
+        RegCloseKey(hKey);
+    }
+    else
+    {
+        // std::cerr << "Failed to open registry key." << std::endl;
+        return false;
+    }
+    return true;
+}
+
+/**
+ * @brief 从默认dns(联网)解析域名主机ip
+ *
+ * @param domainName
+ * @param hosts_ip_address
+ * @return true
+ * @return false
+ */
+bool getDomainIPaddress(wstring domainName, vector<wstring> &hosts_ip_address)
+{
+    hosts_ip_address.clear();
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+    {
+        return false;
+    }
+
+    struct addrinfoW hints;
+    struct addrinfoW *result;
+    ZeroMemory(&hints, sizeof(hints));
+    hints.ai_family = AF_UNSPEC; // 使用 IPv4 或 IPv6
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+
+    if (GetAddrInfoW(domainName.c_str(), NULL, &hints, &result) != 0)
+    {
+        WSACleanup();
+        return false;
+    }
+
+    struct addrinfoW *ptr = nullptr;
+    wchar_t ipBuffer[NI_MAXHOST];
+    for (ptr = result; ptr != nullptr; ptr = ptr->ai_next)
+    {
+        if (GetNameInfoW(ptr->ai_addr, ptr->ai_addrlen, ipBuffer, sizeof(ipBuffer), nullptr, 0, NI_NUMERICHOST) != 0)
+        {
+            // std::cerr << "Failed to get name info" << std::endl;
+            continue;
+        }
+        hosts_ip_address.push_back(ipBuffer);
+        // std::cout << "IP address: " << ipBuffer << std::endl;
+    }
+
+    FreeAddrInfoW(result);
+    WSACleanup();
+    return true;
+}
+
+/**
+ * @brief 获取hosts文件的路径
+ *
+ * @return wstring
+ */
+wstring getHostsPath()
+{
+    wchar_t systemDir[MAX_PATH];
+    UINT len = GetSystemDirectoryW(systemDir, sizeof(systemDir));
+
+    if (len != 0)
+    {
+        std::wstring hostFilePath = std::wstring(systemDir) + L"\\drivers\\etc\\hosts";
+        return hostFilePath;
+    }
+    else
+    {
+        std::wstring hostFilePath = std::wstring(systemDir) + L"C:\\Windows\\system32\\drivers\\etc\\hosts";
+        return hostFilePath;
+    }
+}
+
+#ifndef FMT11_VERSION
+// ? 不加这段编译会找不到链接库 应该是 template 是高cpp标准的 而extern 导不出 这个标准 napi的作用域真是搞的我头疼
+// 能跑就不要动 。。
+template <unsigned trail_args, typename Map, typename... Args>
+static inline std::string fmt11hlp(const Map *ctx, const char *format, Args... args)
+{
+    std::stringstream out;
+    if (format)
+    {
+        auto tpl = std::tuple_cat(std::tuple<Args...>{args...}, std::make_tuple(0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+        char raw[64], tag[32], fmt[32];
+        unsigned fix, dig, counter = 0;
+        while (*format)
+        {
+            if (*format++ != '{')
+            {
+                out << format[-1];
+            }
+            else
+            {
+                auto parse = [](char raw[64], char tag[32], char fmt[32], unsigned &fix, unsigned &dig, const char *in) -> int
+                {
+                    int lv = 0; // parses [{] { [tag][:][fmt] } [}] expressions; returns num of bytes parsed or 0 if error
+                    char *o = raw, *m = tag, *g = 0;
+                    while (*in && *in == '{')
+                    {
+                        *o++ = *in++, ++lv;
+                        if ((o - raw) >= 63)
+                            return 0;
+                    }
+                    while (*in && lv > 0)
+                    {
+                        /**/ if (*in < 32)
+                            return 0;
+                        else if (*in < '0' && !g)
+                            return 0;
+                        else if (*in == '}')
+                            --lv, *o++ = *in++;
+                        else if (*in == ':')
+                            g = fmt, *o++ = *in++;
+                        else
+                            *(g ? g : m)++ = *o++ = *in++;
+                        if (((o - raw) >= 63) || ((m - tag) >= 31) || (g && (g - fmt) >= 31))
+                            return 0;
+                    }
+                    *o = *m = *(g ? g : fmt) = 0;
+                    if (0 != lv)
+                    {
+                        return 0;
+                    }
+                    fix = dig = 0;
+                    for (char *f = fmt; *f != 0; ++f)
+                    {
+                        char *input = f;
+                        if (*input >= '0' && *input <= '9')
+                        {
+                            double dbl = atof(input);
+                            fix = int(dbl), dig = int(dbl * 1000 - fix * 1000);
+                            while (dig && !(dig % 10))
+                                dig /= 10;
+                            // printf("%s <> %d %d\n", input, fix, dig );
+                            break;
+                        }
+                    }
+                    return o - raw;
+                };
+                int read_bytes = parse(raw, tag, fmt, fix, dig, &format[-1]);
+                if (!read_bytes)
+                {
+                    out << format[-1];
+                }
+                else
+                {
+                    // style
+                    format += read_bytes - 1;
+                    for (char *f = fmt; *f; ++f)
+                        switch (*f)
+                        {
+                        default:
+                            if (f[0] >= '0' && f[0] <= '9')
+                            {
+                                while ((f[0] >= '0' && f[0] <= '9') || f[0] == '.')
+                                    ++f;
+                                --f;
+                                out << std::setw(fix);
+                                out << std::fixed;
+                                out << std::setprecision(dig);
+                            }
+                            else
+                            {
+                                out.fill(f[0]);
+                            }
+                            break;
+                        case '#':
+                            out << std::showbase;
+                            break;
+                        case 'b':
+                            out << std::boolalpha;
+                            break;
+                        case 'D':
+                            out << std::dec << std::uppercase;
+                            break;
+                        case 'd':
+                            out << std::dec;
+                            break;
+                        case 'O':
+                            out << std::oct << std::uppercase;
+                            break;
+                        case 'o':
+                            out << std::oct;
+                            break;
+                        case 'X':
+                            out << std::hex << std::uppercase;
+                            break;
+                        case 'x':
+                            out << std::hex;
+                            break;
+                        case 'f':
+                            out << std::fixed;
+                            break;
+                        case '<':
+                            out << std::left;
+                            break;
+                        case '>':
+                            out << std::right;
+                        }
+                    // value
+                    char arg = tag[0];
+                    if (!arg)
+                    {
+                        if (counter < (sizeof...(Args) - trail_args))
+                        {
+                            arg = '0' + counter++;
+                        }
+                        else
+                        {
+                            arg = '\0';
+                        }
+                        // printf("arg %d/%d\n", int(counter), (sizeof...(Args) - trail_args));
+                    }
+                    switch (arg)
+                    {
+                    default:
+                        if (ctx)
+                        {
+                            auto find = ctx->find(tag);
+                            if (find == ctx->end())
+                                out << raw;
+                            else
+                                out << find->second;
+                        }
+                        else
+                        {
+                            out << raw;
+                        }
+                        break;
+                    case 0:
+                        out << raw;
+                        break;
+                    case '0':
+                        out << std::get<0>(tpl);
+                        break;
+                    case '1':
+                        out << std::get<1>(tpl);
+                        break;
+                    case '2':
+                        out << std::get<2>(tpl);
+                        break;
+                    case '3':
+                        out << std::get<3>(tpl);
+                        break;
+                    case '4':
+                        out << std::get<4>(tpl);
+                        break;
+                    case '5':
+                        out << std::get<5>(tpl);
+                        break;
+                    case '6':
+                        out << std::get<6>(tpl);
+                        break;
+                    case '7':
+                        out << std::get<7>(tpl);
+                        break;
+                    case '8':
+                        out << std::get<8>(tpl);
+                        break;
+                    case '9':
+                        out << std::get<9>(tpl);
+                    }
+                }
+            }
+        }
+    }
+    return out.str();
+}
+
+static inline std::string fmt11(const char *format)
+{
+    return fmt11hlp<1, std::map<std::string, std::string>>(nullptr, format, 0);
+}
+
+template <typename... Args>
+static inline std::string fmt11(const char *format, Args... args)
+{
+    return fmt11hlp<0, std::map<std::string, std::string>>(nullptr, format, args...);
+}
+
+template <typename Map>
+static inline std::string fmt11map(const Map &ctx, const char *format)
+{
+    return fmt11hlp<1>(&ctx, format, 0);
+}
+
+template <typename Map, typename... Args>
+static inline std::string fmt11map(const Map &ctx, const char *format, Args... args)
+{
+    return fmt11hlp<0>(&ctx, format, args...);
+}
+
+#endif // FMT11_VERSION
+
+// ------------------------------------------
+
+// 序列化工具预设
+
+string hmc_v4_addr_item::to_josn()
+{
+    string result = string("{");
+    result.append("\"ipaddress\":\"").append(hmc_string_util::escapeJsonString(ipaddress)).append("\",");
+    result.append("\"netmask\":\"").append(hmc_string_util::escapeJsonString(netmask)).append("\",");
+    result.append("\"broadcast\":\"").append(hmc_string_util::escapeJsonString(broadcast)).append("\"");
+    result.append("}");
+    return result;
+}
+
+string ConnectNet::to_josn()
+
+{
+
+    string result = string("{");
+    // string
+    result.append(fmt11(R"( "typeName" : "{}" , )", hmc_string_util::escapeJsonString(typeName)));
+    result.append(fmt11(R"( "remoteIP" : "{}" , )", hmc_string_util::escapeJsonString(remoteIP)));
+    result.append(fmt11(R"( "state" : "{}" , )", hmc_string_util::escapeJsonString(state)));
+    result.append(fmt11(R"( "ip" : "{}" , )", hmc_string_util::escapeJsonString(ip)));
+
+    // num
+    result.append(fmt11(R"( "type" : {} , )", type));
+    result.append(fmt11(R"( "ipAddr" : {} , )", ipAddr));
+    result.append(fmt11(R"( "port" : {} , )", port));
+    result.append(fmt11(R"( "pid" : {} , )", pid));
+    result.append(fmt11(R"( "remotePort" : {} , )", remotePort));
+    result.append(fmt11(R"( "remoteIPAddr" : {} )", remoteIPAddr));
+
+    result.append("}");
+    return result;
+}
+
+string hmc_NetParams::to_josn()
+{
+
+    string result = string("{");
+    // string
+    result.append(hmc_string_util ::fmt11(R"( "hostName" : "{}" , )", hmc_string_util::escapeJsonString(hostName)));
+    result.append(fmt11(R"( "domainName" : "{}" , )", hmc_string_util::escapeJsonString(domainName)));
+    result.append(fmt11(R"( "nodeType" : "{}" , )", hmc_string_util::escapeJsonString(nodeType)));
+    result.append(fmt11(R"( "dhcpScopeName" : "{}" , )", hmc_string_util::escapeJsonString(dhcpScopeName)));
+
+    // array
+
+    result.append(fmt11(R"( "dnsServers" : {} , )", hmc_string_util::vec2json(dnsServers)));
+
+    // bool
+    result.append(fmt11(R"( "enableDns" : {} , )", enableDns ? "true" : "false"));
+    result.append(fmt11(R"( "enableRouting" : {} , )", enableRouting ? "true" : "false"));
+    result.append(fmt11(R"( "enableArpProxy" : {} )", enableArpProxy ? "true" : "false"));
+
+    result.append("}");
+    return result;
+}
+
+wstring hmc_net_addr_item::to_josn()
+{
+    wstring result = wstring(L"{");
+    result.append(LR"("name" : ")" + hmc_string_util::escapeJsonString(name) + L"\",");
+    wstring addr_item_list_to_str = L"";
+
+    for (size_t i = 0; i < addr_item.size(); i++)
+    {
+        auto addr_item_data = addr_item[i];
+        addr_item_list_to_str.append(addr_item_data.to_josn());
+
+        if (addr_item.size() - 1 > i)
+        {
+            addr_item_list_to_str.append(L",");
+        }
+    }
+
+    result.append(LR"( "addr_item" : [)" + addr_item_list_to_str + L"]");
+
+    result.append(L"}");
+    return result;
+}
+
+wstring hmc_addr_item::to_josn()
+{
+    wstring result = wstring(L"{");
+    result.append(L"\"ipaddress\":\"").append(hmc_string_util::escapeJsonString(ipaddress)).append(L"\",");
+    result.append(L"\"typeName\":\"").append(typeName.c_str()).append(L"\",");
+    result.append(L"\"type\":").append(to_wstring(type));
+    result.append(L"}");
+    return result;
+}
+
+extern string sock_lib_to_json(vector<ConnectNet> data)
+{
+    string result = string("");
+    __HMC_STRUCT_TO_JSON_ARRAY(result, data);
+    return result;
+}
+
+extern string sock_lib_to_json(ConnectNet data)
+{
+    return data.to_josn();
+}
+
+extern string sock_lib_to_json(hmc_NetParams data)
+{
+    return data.to_josn();
+}
+
+extern string sock_lib_to_json(hmc_v4_addr_item data)
+{
+    return data.to_josn();
+}
+
+extern string sock_lib_to_json(vector<hmc_v4_addr_item> data)
+{
+    string result = string("");
+    __HMC_STRUCT_TO_JSON_ARRAY(result, data);
+    return result;
+}
+
+extern wstring sock_lib_to_json(hmc_net_addr_item data)
+{
+    return data.to_josn();
+}
+
+extern wstring sock_lib_to_json(hmc_addr_item data)
+{
+    return data.to_josn();
+}
+
+extern wstring sock_lib_to_json(vector<hmc_net_addr_item> data_list)
+{
+    wstring result = wstring(L"");
+    __HMC_STRUCT_TO_JSON_ARRAYW(result, data_list);
+
+    return result;
 }

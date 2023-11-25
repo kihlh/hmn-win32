@@ -8,22 +8,21 @@
 #include <Shlobj.h>
 #include <iostream>
 #include <node_api.h>
-
-#include "./include/json.hpp"
-using json = nlohmann::json;
-#include "./sock_lib/sock.hpp"
+#include <psapi.h>
 
 #include "./hmc_g.hpp"
-#include "./hmc_string_util.hpp"
+
+#include "./sock_lib.h"
+
 #include "./napi_value_util.hpp"
 
 using namespace std;
 
-#define $napi_get_cb_info(argsLen, args, fnName)                                                                           \
-    if (napi_get_cb_info(env, info, &argsLen, args, NULL, NULL) != napi_ok)                                                \
-    {                                                                                                                      \
-        hmc_console::error("main", string("napi fn -> [").append(fnName).append("]").append(" $napi_get_cb_info error ")); \
-        return NULL;                                                                                                       \
+#define $napi_get_cb_info(argsLen, args, fnName)                            \
+    if (napi_get_cb_info(env, info, &argsLen, args, NULL, NULL) != napi_ok) \
+    {                                                                       \
+        napi_throw_type_error(env, NULL, string(fnName).c_str());           \
+        return NULL;                                                        \
     }
 
 // 导出一个其他cpp中的模块
