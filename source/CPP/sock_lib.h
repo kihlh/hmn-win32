@@ -21,7 +21,7 @@
 #include <ws2tcpip.h>
 #include <ip2string.h>
 #include <iphlpapi.h>
-#include "./hmc_string_util.h"
+#include "./hmc_string_util.hpp"
 
 #pragma comment(lib, "ws2_32.lib")
 #pragma comment(lib, "iphlpapi.lib")

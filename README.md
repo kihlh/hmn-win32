@@ -22,14 +22,7 @@ npm i hmn-win32
 
 ```javascript
 let HMN = require("hmn-win32");
-console.log("net:ping=>",HMN.ping(8.8.8.8))
-//ping 8.8.8.8 => [25n,200n,8n] (ns)
-
-console.log("net:ip=>",HMN.ip())
-//ip=> [192.168.0.5,196.128.8.255,8.8.8.8]
-
-console.log("net:public_ip=>",HMN.public_ip())
-//public_ip=> 8.8.8.8
+console.log("net:getConnectNetList=>",hmn.getConnectNetList()[0])
 
 ```
 
@@ -51,64 +44,42 @@ import  HMC = require("hmn-win32");
 - **Sleep** 异步的阻塞
 - **native** 直接连接HMN.node的原生方法 (不建议使用)
 
-### API(正在构建中。。。)
+### API
 
 - **ipv4** 获取本机局域网的ip(v4)
-
 - **ip**获取本机局域网的ip(适配器,v4,v6)
-
 - **adapterIP **获取本机局域网的ip(适配器,v4,v6)
-
-- **public_ip** 获取本机公网ip
-
+- **adapterIPAsync**  获取本机局域网的ip(适配器,v4,v6)  **[异步 async ]**
+- **public_ip** 获取本机公网ip  **[异步 async ]**
 - **getNetParams** 获取主机网络信息
-
-- **freePort** 获取一个tcp空闲端口 (服务)
-
-- **freePortTCP** 获取一个空闲的tcp端口
-
-- **freePortUDP** 获取一个空闲的udp端口
-
-- **hasPortUDP** 判断此udp端口是否空闲
-
-- **hasPortTCP**判断此TCP端口是否空闲
-
+- **getNetParamsAsync** 获取主机网络信息
+- **freePort** 获取一个tcp空闲端口 (服务)  **[异步 async ]**
+- **freePortTCP** 获取一个空闲的tcp端口  **[异步 async ]**
+- **freePortUDP** 获取一个空闲的udp端口  **[异步 async ]**
+- **hasPortUDP** 判断此udp端口是否空闲  **[异步 async ]**
+- **hasPortTCP**判断此TCP端口是否空闲  **[异步 async ]**
 - **getSystemProxyServer** 获取系统代理链接（仅在启用系统代理时）
-
 - **getSystemProxyPac**  获取系统代理pac脚本链接
-
 - **getDomainIPaddress**  从默认dns(联网)解析域名主机ip
-
+- **getDomainIPaddressAsync**  从默认dns(联网)解析域名主机ip    **[异步 async ]**
 - **getHostsPath** 获取hosts文件的路径
-
 - **getTCPv6PortProcessID** 获取此端口被哪个进程占用了
-
 - **getUDPv6PortProcessID** 获取此端口被哪个进程占用了
-
 - **getUDPv4PortProcessID** 获取此端口被哪个进程占用了
-
 - **getTCPv4PortProcessID** 获取此端口被哪个进程占用了
-
+- **getTCPv6PortProcessIDAsync** 获取此端口被哪个进程占用了  **[异步 async ]**
+- **getUDPv6PortProcessIDAsync** 获取此端口被哪个进程占用了 **[异步 async ]**
+- **getUDPv4PortProcessIDAsync** 获取此端口被哪个进程占用了 **[异步 async ]**
+- **getTCPv4PortProcessIDAsync** 获取此端口被哪个进程占用了 **[异步 async ]**
 - **getConnectNetList**  枚举此电脑中的 端口 ipv4 and ipv6 的 TCP，UDP 端口信息
-
+- **getConnectNetListAsync**  枚举此电脑中的 端口 ipv4 and ipv6 的 TCP，UDP 端口信息    **[异步 async ]**
 - **killProcess** 结束该pid进程（低权利 如果需要高权限的kill请使用hmc-win32）
-
 - **sleep** 同步阻塞(进程)
-
 - **Sleep** 异步阻塞(进程)
-
 - **PortWatchdog** 检测端口变化如果关闭或者启用时发起回调
-
 - **getProcessidFilePath** 获取进程可执行文件位置
-
+- **getProcessidFilePathAsync** 获取进程可执行文件位置  **[异步 async ]**
 - **isAdmin** 判断当前软件是否拥有管理员权限
-
--   **ping** 
-- 对运行速度提升影响不大，已移除
-  
-- ping使用  https://www.npmjs.com/package/ping
-  
-- 服务器有效性判断用 https://github.com/qawemlilo/ping-monitor
 
 ### 重新构建
 

@@ -17,6 +17,13 @@ export declare module HMN {
         getSystemProxyServer(): string | null;
         getSystemProxyPac(): string | null;
         getDomainIPaddress(domain: string): string;
+        getConnectNetListAsync: (tcp?: boolean, udp?: boolean, tcp6?: boolean, udp6?: boolean) => Promise<string>;
+        getPortProcessIDAsync: (PortType: 0 | 1 | 2 | 3, port: number) => Promise<string>;
+        getProcessidFilePathAsync: (pid: number) => Promise<string>;
+        adapterIPAsync: () => Promise<string>;
+        ipv4Async: () => Promise<string>;
+        getDomainIPaddressAsync: (domain: string) => Promise<string>;
+        getNetParamsAsync: () => Promise<string>;
     }
     interface ipv4Item {
         broadcast: string;
@@ -160,6 +167,21 @@ export declare function ip(): Array<HMN.hmc_net_addr_item>;
  */
 export declare function adapterIP(): Array<HMN.hmc_net_addr_item>;
 /**
+ * 枚举本机局域网中的ipv4地址
+ * @returns
+ */
+export declare function ipv4Async(): Promise<Array<HMN.ipv4Item>>;
+/**
+ * 获取本机局域网的所以ip (并区分适配器,v4,v6)
+ * @returns
+ */
+export declare function ipAsync(): Promise<Array<HMN.hmc_net_addr_item>>;
+/**
+ * 获取本机局域网的所以ip (并区分适配器,v4,v6)
+ * @returns
+ */
+export declare function adapterIPAsync(): Promise<Array<HMN.hmc_net_addr_item>>;
+/**
  *  枚举此电脑中的 端口 ipv4 and ipv6 的 TCP，UDP 端口信息
  * @param tcp 是否遍历 tcp ipv4端口
  * @default true
@@ -172,6 +194,19 @@ export declare function adapterIP(): Array<HMN.hmc_net_addr_item>;
  * @returns
  */
 export declare function getConnectNetList(tcp?: boolean, udp?: boolean, tcp6?: boolean, udp6?: boolean): Array<HMN.ConnectNet>;
+/**
+ *  枚举此电脑中的 端口 ipv4 and ipv6 的 TCP，UDP 端口信息 异步
+ * @param tcp 是否遍历 tcp ipv4端口
+ * @default true
+ * @param udp  是否遍历 udp ipv4端口
+ * @default true
+ * @param tcp6  是否遍历 tcp ipv6端口
+ * @default true
+ * @param udp6  是否遍历 udp ipv6端口
+ * @default true
+ * @returns
+ */
+export declare function getConnectNetListAsync(tcp?: boolean, udp?: boolean, tcp6?: boolean, udp6?: boolean): Promise<Array<HMN.ConnectNet>>;
 /**
  * `Sync` 同步阻塞(进程)
  * @param awaitTime
@@ -220,6 +255,12 @@ export declare function hasPortUDP(port: number, callBack: (hasPort: boolean) =>
  */
 export declare function getProcessidFilePath(ProcessID: number): string | null;
 /**
+ * 获取进程可执行文件位置
+ * @param ProcessName 进程名
+ * @returns 进程id
+ */
+export declare function getProcessidFilePathAsync(ProcessID: number): Promise<unknown>;
+/**
  * 结束该进程
  * @param ProcessID
  * @returns
@@ -242,13 +283,37 @@ export declare function getUDPv4PortProcessID(port: number): number | null;
  * @param port
  * @returns
  */
-export declare function getUDPv6PortProcessID(port: number): string;
+export declare function getUDPv6PortProcessID(port: number): number[];
 /**
  * 获取此端口被哪个进程占用了
  * @param port
  * @returns
  */
-export declare function getTCPv6PortProcessID(port: number): string;
+export declare function getTCPv6PortProcessID(port: number): number[];
+/**
+ * 获取此端口被哪个进程占用了
+ * @param port
+ * @returns
+ */
+export declare function getTCPv4PortProcessIDAsync(port: number): Promise<unknown>;
+/**
+ * 获取此端口被哪个进程占用了
+ * @param port
+ * @returns
+ */
+export declare function getUDPv4PortProcessIDAsync(port: number): Promise<unknown>;
+/**
+ * 获取此端口被哪个进程占用了
+ * @param port
+ * @returns
+ */
+export declare function getUDPv6PortProcessIDAsync(port: number): Promise<unknown>;
+/**
+ * 获取此端口被哪个进程占用了
+ * @param port
+ * @returns
+ */
+export declare function getTCPv6PortProcessIDAsync(port: number): Promise<unknown>;
 /**
  * 获取hosts文件的路径
  * @returns
@@ -265,6 +330,16 @@ export declare function getHostsPath(): string;
  */
 export declare function getDomainIPaddress(url: string): Array<string>;
 /**
+ * 从默认dns(联网)解析域名主机ip
+ * - √ goole.com
+ * - √ api.goole.com
+ * - × api.goole.com/services
+ * - × https://goole.com
+ * @param url
+ * @returns ip列表
+ */
+export declare function getDomainIPaddressAsync(url: string): Promise<Array<string>>;
+/**
  * 获取系统代理pac脚本链接
  * @returns
  */
@@ -279,4 +354,13 @@ export declare function getSystemProxyServer(): string | null;
  * @returns
  */
 export declare function getNetParams(): HMN.hmc_NetParams | null;
+/**
+ * 获取主机网络信息
+ * @returns
+ */
+export declare function getNetParamsAsync(): Promise<HMN.hmc_NetParams>;
+/**
+ * 获取公网ip
+ * @returns
+ */
 export declare function public_ip(): Promise<string>;

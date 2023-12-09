@@ -6,7 +6,7 @@
       "conditions": [
         ['OS=="win"', {
           "sources": [
-            # "fmt11.cpp",
+            "napi_value_util.cpp",
             "hmc_string_util.cpp",
             "sock_lib.cpp",
             "Main.cpp",

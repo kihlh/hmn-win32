@@ -32,6 +32,7 @@ const get_native: () => HMN.Native = (binPath?: string) => {
         function fnStr(...args: any[]) { console.error(HMCNotPlatform); return '' }
         function fnAnyArr(...args: any[]) { console.error(HMCNotPlatform); return [] as any[] }
         function fnArrayStr(...args: any[]) { console.error(HMCNotPlatform); return '[]' }
+        function fnPromise(...args: any[]) { console.error(HMCNotPlatform); return Promise.reject("HMC::HMC current method only supports win32 platform") }
         return {
             isAdmin: fnBool,
             //? 返回json文本
@@ -56,6 +57,13 @@ const get_native: () => HMN.Native = (binPath?: string) => {
             getSystemProxyPac: fnNull,
             //? 返回json文本
             getDomainIPaddress: fnArrayStr,
+            getConnectNetListAsync: fnPromise,
+            getProcessidFilePathAsync: fnPromise,
+            adapterIPAsync: fnPromise,
+            getPortProcessIDAsync: fnPromise,
+            getDomainIPaddressAsync: fnPromise,
+            ipv4Async: fnPromise,
+            getNetParamsAsync:fnPromise,
         }
     })();
     return Native;
@@ -89,6 +97,14 @@ export module HMN {
         getSystemProxyPac(): string | null;
         //? 返回json文本
         getDomainIPaddress(domain: string): string;
+        //? 返回json文本
+        getConnectNetListAsync: (tcp?: boolean, udp?: boolean, tcp6?: boolean, udp6?: boolean) => Promise<string>;
+        getPortProcessIDAsync: (PortType: 0 | 1 | 2 | 3, port: number) => Promise<string>;
+        getProcessidFilePathAsync: (pid: number) => Promise<string>;
+        adapterIPAsync: () => Promise<string>;
+        ipv4Async: () => Promise<string>;
+        getDomainIPaddressAsync: (domain: string) => Promise<string>;
+        getNetParamsAsync:()=> Promise<string>;
     }
 
     export interface ipv4Item {
@@ -317,7 +333,7 @@ export function isAdmin(): boolean {
  * @returns 
  */
 export function ipv4(): Array<HMN.ipv4Item> {
-    return JSON.parse(native.ipv4() || "{}");
+    return JSON.parse(native.ipv4() || "[]");
 }
 
 /**
@@ -326,7 +342,7 @@ export function ipv4(): Array<HMN.ipv4Item> {
  */
 
 export function ip(): Array<HMN.hmc_net_addr_item> {
-    return JSON.parse(native.adapterIP() || "{}");
+    return JSON.parse(native.adapterIP() || "[]");
 }
 
 /**
@@ -334,8 +350,62 @@ export function ip(): Array<HMN.hmc_net_addr_item> {
  * @returns 
  */
 export function adapterIP(): Array<HMN.hmc_net_addr_item> {
-    return JSON.parse(native.adapterIP() || "{}");
+    return JSON.parse(native.adapterIP() || "[]");
 }
+
+
+
+
+/**
+ * 枚举本机局域网中的ipv4地址
+ * @returns 
+ */
+export function ipv4Async(): Promise<Array<HMN.ipv4Item>> {
+    return new Promise((resolve, reject) => {
+        try {
+            native.ipv4Async().then(data => {
+                resolve(JSON.parse(data || "[]") as Array<HMN.ipv4Item>)
+            }).catch(reject);;
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+/**
+ * 获取本机局域网的所以ip (并区分适配器,v4,v6)
+ * @returns 
+ */
+
+export function ipAsync(): Promise<Array<HMN.hmc_net_addr_item>> {
+    return new Promise((resolve, reject) => {
+        try {
+            native.adapterIPAsync().then(data => {
+                resolve(JSON.parse(data || "[]") as Array<HMN.hmc_net_addr_item>)
+            }).catch(reject);;
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+/**
+ * 获取本机局域网的所以ip (并区分适配器,v4,v6)
+ * @returns 
+ */
+export function adapterIPAsync(): Promise<Array<HMN.hmc_net_addr_item>> {
+    return new Promise((resolve, reject) => {
+        try {
+            native.adapterIPAsync().then(data => {
+                resolve(JSON.parse(data || "[]") as Array<HMN.hmc_net_addr_item>)
+            }).catch(reject);;
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+
 
 /**
  *  枚举此电脑中的 端口 ipv4 and ipv6 的 TCP，UDP 端口信息
@@ -356,6 +426,37 @@ export function getConnectNetList(tcp?: boolean, udp?: boolean, tcp6?: boolean, 
         ref.bool(typeof tcp6 == "undefined" ? true : tcp6),
         ref.bool(typeof udp6 == "undefined" ? true : udp6)
     ) || "[]");
+}
+
+
+/**
+ *  枚举此电脑中的 端口 ipv4 and ipv6 的 TCP，UDP 端口信息 异步
+ * @param tcp 是否遍历 tcp ipv4端口 
+ * @default true
+ * @param udp  是否遍历 udp ipv4端口 
+ * @default true
+ * @param tcp6  是否遍历 tcp ipv6端口 
+ * @default true
+ * @param udp6  是否遍历 udp ipv6端口 
+ * @default true
+ * @returns 
+ */
+export async function getConnectNetListAsync(tcp?: boolean, udp?: boolean, tcp6?: boolean, udp6?: boolean): Promise<Array<HMN.ConnectNet>> {
+    return new Promise<Array<HMN.ConnectNet>>((resolve, reject) => {
+        try {
+            native.getConnectNetListAsync(
+                ref.bool(typeof tcp == "undefined" ? true : tcp),
+                ref.bool(typeof udp == "undefined" ? true : udp),
+                ref.bool(typeof tcp6 == "undefined" ? true : tcp6),
+                ref.bool(typeof udp6 == "undefined" ? true : udp6)
+            ).then(data => {
+                resolve(JSON.parse(data || "[]"))
+            });
+        } catch (error) {
+            reject(error);
+        }
+    });
+
 }
 
 
@@ -557,6 +658,23 @@ export function getProcessidFilePath(ProcessID: number) {
 }
 
 /**
+ * 获取进程可执行文件位置
+ * @param ProcessName 进程名
+ * @returns 进程id
+ */
+export function getProcessidFilePathAsync(ProcessID: number) {
+    return new Promise((resolve, reject) => {
+        try {
+            native.getProcessidFilePathAsync(ref.int(ProcessID)).then(data => {
+                resolve(data)
+            }).catch(reject);
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+/**
  * 结束该进程
  * @param ProcessID 
  * @returns 
@@ -591,7 +709,7 @@ export function getUDPv4PortProcessID(port: number) {
  * @returns 
  */
 export function getUDPv6PortProcessID(port: number) {
-    return native.getUDPv6PortProcessID(ref.int(port));
+    return JSON.parse(native.getUDPv6PortProcessID(ref.int(port))) as number[];
 }
 
 /**
@@ -600,8 +718,89 @@ export function getUDPv6PortProcessID(port: number) {
  * @returns 
  */
 export function getTCPv6PortProcessID(port: number) {
-    return native.getTCPv6PortProcessID(ref.int(port));
+    return JSON.parse(native.getTCPv6PortProcessID(ref.int(port))) as number[];
 }
+
+
+/**
+ * 获取此端口被哪个进程占用了
+ * @param port 
+ * @returns 
+ */
+export function getTCPv4PortProcessIDAsync(port: number) {
+    return new Promise((resolve, reject) => {
+        try {
+            native.getPortProcessIDAsync(0, ref.int(port)).then(data => {
+                const portList = JSON.parse(data || "[]") as Array<number>;
+                if (!portList.length) {
+                    resolve(null);
+                } else {
+                    resolve(portList[0]);
+                }
+            }).catch(reject);
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+/**
+ * 获取此端口被哪个进程占用了
+ * @param port 
+ * @returns 
+ */
+export function getUDPv4PortProcessIDAsync(port: number) {
+    return new Promise((resolve, reject) => {
+        try {
+            native.getPortProcessIDAsync(1, ref.int(port)).then(data => {
+                const portList = JSON.parse(data || "[]") as Array<number>;
+                if (!portList.length) {
+                    resolve(null);
+                } else {
+                    resolve(portList[0]);
+                }
+            }).catch(reject);
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+/**
+ * 获取此端口被哪个进程占用了
+ * @param port 
+ * @returns 
+ */
+export function getUDPv6PortProcessIDAsync(port: number) {
+    return new Promise((resolve, reject) => {
+        try {
+            native.getPortProcessIDAsync(3, ref.int(port)).then(data => {
+                resolve(JSON.parse(data || "[]") as Array<number>)
+            }).catch(reject);
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+/**
+ * 获取此端口被哪个进程占用了
+ * @param port 
+ * @returns 
+ */
+export function getTCPv6PortProcessIDAsync(port: number) {
+    return new Promise((resolve, reject) => {
+        try {
+            native.getPortProcessIDAsync(2, ref.int(port)).then(data => {
+                resolve(JSON.parse(data || "[]") as Array<number>)
+            }).catch(reject);
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+
 
 /**
  * 获取hosts文件的路径
@@ -622,6 +821,27 @@ export function getHostsPath() {
  */
 export function getDomainIPaddress(url: string): Array<string> {
     return JSON.parse(native.getDomainIPaddress(ref.string(url)));
+}
+
+/**
+ * 从默认dns(联网)解析域名主机ip
+ * - √ goole.com
+ * - √ api.goole.com
+ * - × api.goole.com/services
+ * - × https://goole.com
+ * @param url 
+ * @returns ip列表
+ */
+export function getDomainIPaddressAsync(url: string): Promise<Array<string>> {
+    return new Promise((resolve, reject) => {
+        try {
+            native.getDomainIPaddressAsync(ref.string(url)).then((data) => {
+                resolve(JSON.parse(data || "[]") as Array<string>)
+            }).catch(reject);
+        } catch (error) {
+            reject(error);
+        }
+    });
 }
 
 /**
@@ -646,6 +866,24 @@ export function getSystemProxyServer() {
  */
 export function getNetParams(): HMN.hmc_NetParams | null {
     return JSON.parse(native.getNetParams());
+}
+
+
+/**
+ * 获取主机网络信息
+ * @returns 
+ */
+export function getNetParamsAsync():Promise<HMN.hmc_NetParams> {
+
+    return new Promise((resolve, reject) => {
+        try {
+            native.getNetParamsAsync().then((data) => {
+                resolve(JSON.parse(data || "{}") as HMN.hmc_NetParams )
+            }).catch(reject);
+        } catch (error) {
+            reject(error);
+        }
+    });
 }
 
 function https_get_data(url: string) {
@@ -681,6 +919,10 @@ function https_get_data(url: string) {
     });
 }
 
+/**
+ * 获取公网ip
+ * @returns 
+ */
 export function public_ip(): Promise<string> {
 
     return new Promise<string>(async (resolve, reject) => {

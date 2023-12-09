@@ -13,7 +13,7 @@
 #include "./hmc_g.hpp"
 
 #include "./sock_lib.h"
-
+#include "./hmc_string_util.hpp"
 #include "./napi_value_util.hpp"
 
 using namespace std;

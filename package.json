@@ -1,6 +1,6 @@
 {
   "name": "net-win32",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "win32 Local network information method set",
   "license": "MIT License",
   "main": "./hmn.js",

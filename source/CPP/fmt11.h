@@ -46,4 +46,14 @@ extern std::string fmt11map(const Map &ctx, const char *format);
 template <typename Map, typename... Args>
 extern std::string fmt11map(const Map &ctx, const char *format, Args... args);
 
+template <unsigned trail_args, typename Map, typename... Args>
+extern std::wstring fmt11hlp(const Map *ctx, const wchar_t *format, Args... args);
+extern std::wstring fmt11(const wchar_t *format);
+template <typename... Args>
+extern std::wstring fmt11(const wchar_t *format, Args... args);
+template <typename Map>
+extern std::wstring fmt11map(const Map &ctx, const wchar_t *format);
+template <typename Map, typename... Args>
+extern std::wstring fmt11map(const Map &ctx, const wchar_t *format, Args... args);
+
 #endif FMT11_VERSION

@@ -1060,7 +1060,7 @@ wstring getHostsPath()
     }
     else
     {
-        std::wstring hostFilePath = std::wstring(systemDir) + L"C:\\Windows\\system32\\drivers\\etc\\hosts";
+        std::wstring hostFilePath =  L"C:\\Windows\\system32\\drivers\\etc\\hosts";
         return hostFilePath;
     }
 }
@@ -1328,14 +1328,14 @@ string hmc_NetParams::to_josn()
 
     string result = string("{");
     // string
-    result.append(hmc_string_util ::fmt11(R"( "hostName" : "{}" , )", hmc_string_util::escapeJsonString(hostName)));
+    result.append(fmt11(R"( "hostName" : "{}" , )", hmc_string_util::escapeJsonString(hostName)));
     result.append(fmt11(R"( "domainName" : "{}" , )", hmc_string_util::escapeJsonString(domainName)));
     result.append(fmt11(R"( "nodeType" : "{}" , )", hmc_string_util::escapeJsonString(nodeType)));
     result.append(fmt11(R"( "dhcpScopeName" : "{}" , )", hmc_string_util::escapeJsonString(dhcpScopeName)));
 
     // array
 
-    result.append(fmt11(R"( "dnsServers" : {} , )", hmc_string_util::vec2json(dnsServers)));
+    result.append(fmt11(R"( "dnsServers" : {} , )", hmc_string_util::vec_to_array_json(dnsServers)));
 
     // bool
     result.append(fmt11(R"( "enableDns" : {} , )", enableDns ? "true" : "false"));
